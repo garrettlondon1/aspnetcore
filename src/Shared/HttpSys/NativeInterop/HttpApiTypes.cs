@@ -602,7 +602,7 @@ internal static unsafe class HttpApiTypes
         internal bool ReceiveMutualAuth;
         internal bool ReceiveContextHandle;
         internal bool DisableNTLMCredentialCaching;
-        internal ulong ExFlags;
+        internal byte ExFlags;
         HTTP_SERVER_AUTHENTICATION_DIGEST_PARAMS DigestParams;
         HTTP_SERVER_AUTHENTICATION_BASIC_PARAMS BasicParams;
     }
@@ -692,8 +692,8 @@ internal static unsafe class HttpApiTypes
     internal enum HTTP_AUTH_EX_FLAGS : uint
     {
         NONE = 0x00000000,
-        HTTP_AUTH_EX_FLAG_ENABLE_KERBEROS_CREDENTIAL_CACHING = 1U,
-        HTTP_AUTH_EX_FLAG_CAPTURE_CREDENTIAL = 2U,
+        HTTP_AUTH_EX_FLAG_ENABLE_KERBEROS_CREDENTIAL_CACHING = 0x00000001,
+        HTTP_AUTH_EX_FLAG_CAPTURE_CREDENTIAL = 0x00000002,
     }
 
     [Flags]
