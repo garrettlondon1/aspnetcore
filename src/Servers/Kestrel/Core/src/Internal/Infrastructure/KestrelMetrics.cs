@@ -9,6 +9,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Security.Authentication;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Connections.Features;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure;
 
@@ -96,12 +97,17 @@ internal sealed class KestrelMetrics
     {
         if (metricsContext.CurrentConnectionsCounterEnabled || metricsContext.ConnectionDurationEnabled)
         {
-            ConnectionStopCore(metricsContext, exception, customTags, startTimestamp, currentTimestamp);
+            long? errorCode = null;
+            if (metricsContext.ConnectionContext.Features.Get<IProtocolErrorCodeFeature>() is IProtocolErrorCodeFeature errorCodeFeature && errorCodeFeature.Error != -1)
+            {
+                errorCode = errorCodeFeature.Error;
+            }
+            ConnectionStopCore(metricsContext, exception, errorCode, customTags, startTimestamp, currentTimestamp);
         }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private void ConnectionStopCore(in ConnectionMetricsContext metricsContext, Exception? exception, List<KeyValuePair<string, object?>>? customTags, long startTimestamp, long currentTimestamp)
+    private void ConnectionStopCore(in ConnectionMetricsContext metricsContext, Exception? exception, long? protocolErrorCode, List<KeyValuePair<string, object?>>? customTags, long startTimestamp, long currentTimestamp)
     {
         var tags = new TagList();
         InitializeConnectionTags(ref tags, metricsContext);
@@ -114,6 +120,11 @@ internal sealed class KestrelMetrics
 
         if (metricsContext.ConnectionDurationEnabled)
         {
+            if (protocolErrorCode != null)
+            {
+                tags.Add("http.connection.protocol_code", protocolErrorCode);
+            }
+
             if (exception != null)
             {
                 tags.Add("error.type", exception.GetType().FullName);
