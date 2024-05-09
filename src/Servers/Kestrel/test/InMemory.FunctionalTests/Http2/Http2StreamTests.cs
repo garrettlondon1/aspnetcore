@@ -1,27 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.HPack;
 using System.Runtime.ExceptionServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.InternalTesting;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2;
-using Microsoft.AspNetCore.InternalTesting;
+using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
-using Xunit;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests;
 
@@ -46,6 +40,7 @@ public class Http2StreamTests : Http2TestBase
         await StartStreamAsync(1, headers, endStream: true);
 
         await WaitForConnectionErrorAsync<Exception>(ignoreNonGoAwayFrames: false, 1, Http2ErrorCode.PROTOCOL_ERROR, "Malformed request: invalid headers.");
+        Assert.Equal(nameof(ConnectionErrorReason.InvalidRequestHeaders), ConnectionTags[KestrelMetrics.KestrelConnectionErrorReason]);
     }
 
     [Fact]
@@ -2240,6 +2235,7 @@ public class Http2StreamTests : Http2TestBase
         await StartStreamAsync(1, _browserRequestHeaders, endStream: true);
 
         await WaitForConnectionErrorAsync<Exception>(ignoreNonGoAwayFrames: false, int.MaxValue, Http2ErrorCode.INTERNAL_ERROR);
+        Assert.Equal(nameof(ConnectionErrorReason.ErrorWritingHeaders), ConnectionTags[KestrelMetrics.KestrelConnectionErrorReason]);
     }
 
     [Fact]
@@ -2590,6 +2586,7 @@ public class Http2StreamTests : Http2TestBase
         Assert.Equal("200", _decodedHeaders[InternalHeaderNames.Status]);
 
         await WaitForConnectionErrorAsync<Exception>(ignoreNonGoAwayFrames: false, int.MaxValue, Http2ErrorCode.INTERNAL_ERROR);
+        Assert.Equal(nameof(ConnectionErrorReason.ErrorWritingHeaders), ConnectionTags[KestrelMetrics.KestrelConnectionErrorReason]);
     }
 
     [Fact]
@@ -3205,6 +3202,7 @@ public class Http2StreamTests : Http2TestBase
 
         await WaitForConnectionErrorAsync<HPackEncodingException>(ignoreNonGoAwayFrames: false, expectedLastStreamId: int.MaxValue, Http2ErrorCode.INTERNAL_ERROR,
             SR.net_http_hpack_encode_failure);
+        Assert.Equal(nameof(ConnectionErrorReason.ErrorWritingHeaders), ConnectionTags[KestrelMetrics.KestrelConnectionErrorReason]);
     }
 
     [Fact]
@@ -5238,6 +5236,7 @@ public class Http2StreamTests : Http2TestBase
             expectedLastStreamId: 1,
             expectedErrorCode: Http2ErrorCode.PROTOCOL_ERROR,
             expectedErrorMessage: CoreStrings.BadRequest_MalformedRequestInvalidHeaders);
+        Assert.Equal(nameof(ConnectionErrorReason.InvalidRequestHeaders), ConnectionTags[KestrelMetrics.KestrelConnectionErrorReason]);
     }
 
     [Fact]
@@ -5257,6 +5256,7 @@ public class Http2StreamTests : Http2TestBase
 
         await WaitForConnectionErrorAsync<Http2ConnectionErrorException>(ignoreNonGoAwayFrames: false, expectedLastStreamId: 1,
             Http2ErrorCode.PROTOCOL_ERROR, CoreStrings.BadRequest_MalformedRequestInvalidHeaders);
+        Assert.Equal(nameof(ConnectionErrorReason.InvalidRequestHeaders), ConnectionTags[KestrelMetrics.KestrelConnectionErrorReason]);
     }
 
     [Fact]
